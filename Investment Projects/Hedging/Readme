@@ -1,7 +1,8 @@
 -Our goal in this project is design a strategy for maximizing the net value of a portfolio containing 10000 Microsoft shares as an underlying asset,
              with a focus on hedging with a strike price of 210 USD and call and put options.
--This project is a joint work by three team members enrolled as fulltime students in  School of Business, University of California, Riverside in different degree programs.
- 1. Jashan Meet (MBA) 2. Monika Baloda (MS in Business Analytics) 3.Luis Flores (MBA)
+-This project is a joint work by three team members enrolled as fulltime students in graduate level course MGT232 : Asset Pricing and Derivatives at
+             School of Business, University of California, Riverside in different degree programs. The names of team-members are:
+             1. Jashan Meet (MBA) 2. Monika Baloda (MS in Business Analytics) 3.Luis Flores (MBA)
  
 -Based on the combination permutation, we have created 21 different cases to design a strategy for maximizing the net value of a portfolio 
 containing 10000 Microsoft shares as an underlying asset, with a focus on hedging with a strike price of 210 USD and call and put options 

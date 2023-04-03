@@ -1,0 +1,23 @@
+-Our goal in this project is design a strategy for maximizing the net value of a portfolio containing 10000 Microsoft shares as an underlying asset,
+             with a focus on hedging with a strike price of 210 USD and call and put options.
+-This project is a joint work by three team members enrolled as fulltime students in  School of Business, University of California, Riverside in different degree programs.
+ 1. Jashan Meet (MBA) 2. Monika Baloda (MS in Business Analytics) 3.Luis Flores (MBA)
+ 
+-Based on the combination permutation, we have created 21 different cases to design a strategy for maximizing the net value of a portfolio 
+containing 10000 Microsoft shares as an underlying asset, with a focus on hedging with a strike price of 210 USD and call and put options 
+costing 20 and 18 USD, respectively. We have considered two different paths for the market going up and down and analyzed the equity value 
+for each case with and without hedging.
+
+Cases:
+-In the first case, we calculated the equity value of having no hedge. 
+-In the second case, we bought naked call and put options in different ratios, including 100:0, 75:25, 50:50, 25:75, and 0:100. 
+-The third and fourth cases involved buying calls and shorting puts and shorting calls and buying puts, respectively. 
+-In the fifth case, we shorted both call and put options.
+-After analyzing the equity value of all 21 cases, we calculated the average returns for different market conditions every ten days for up to 60 days. 
+-We found that shorting the put and losing money from shorting the call was profitable in the case where Microsoft only moved up in one direction, 
+but the loss from shorting the call was not significant enough compared to other cases.
+-From cases 19 to 21, the strategy of shorting call and put options with a ratio of 50:50 to 0:100 was profitable as the outcall short was minimized after every case. 
+-Therefore, the Theta decay strategy in cases 19 to 21 was profitable on average for both market paths.
+
+
+I'm also adding the excel report submitted as final report of this project. 

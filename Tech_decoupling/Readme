@@ -2,8 +2,9 @@ This project investigate the co-movement of technology and non-technology sector
 Calling the close co-movement ‘coupling’, I show that after the year 2015, the technology and non-technology sectors decouples in terms of their levels and volatility. 
 In this folder, we upload three main files: 
   1. 'tech_decouple_public_markdown.Rmd' : R-markdown containing codes and its description.
-  2. Paper draft which is the main research document, it contains pretty much everything: main research findings, exploratory data analysis and methodology. 
-  3. I also provide the data which is used for this project. This data is also publically available on yahoo finance website. 
+  2. `Paper_draft_tech_decoupling.pdf' : Paper draft which is the main research document, it contains pretty much everything: main research findings, exploratory data analysis and methodology. 
+  3. `NDXTech_NonTech.csv' : I also provide the data which is used for this project. This data is also publically available on yahoo finance website.
+  4. `Abstract' : This file gives brief overview of our work.  
 
 This work relates to many research fields, the main field it belongs to is empirical quantiative finance. It also relates to technology vs non-technology sector movements. 
 Time series econometrics, economic growth, finance volatility also finds their mention in this work. 

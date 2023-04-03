@@ -1,0 +1,464 @@
+---
+title: "Tech Decoupling"
+author: "Monika Baloda"
+date: '2023-03-22'
+output: html_document
+---
+
+
+
+*Loading the required libraries*
+```{r, warning=FALSE}
+#install.packages("xts")
+library(xts)
+#install.packages("zoo")
+library(zoo)
+library(ggplot2)
+#install.packages("lubridate")
+library(lubridate)
+#install.packages("tseries")
+library(tseries)
+options(xts.warn_dplyr_breaks_lag = FALSE)
+```
+
+
+*Loading the dataset*: 
+```{r}
+df=read.csv("C:/Users/monika/Desktop/Research/Time series/data/NDXTech_NonTech.csv")
+```
+
+***Notations***
+We have two time series in out data: NASDAQ100 Tech Index (NDXT) and NASDAQ100 Ex-Tech Index (NDXX). For simplicity of the reference, we call the tech index NDXT $y_t$ or series $y$ and the NDXX $x_t$ or series $x$. From here onwards in this report, whenever I refer to series $y$, I mean it to be tech index and by series $x$, I mean Ex-tech or Non-tech index. 
+
+#Data-Cleaning#
+In this section, we process the data in order to make it usable.
+
+
+##Converting the time-series in Numeric form##
+```{r}
+df$Tech_index=as.numeric(df$Tech_index)
+df$Non_tech_index=as.numeric(df$Non_tech_index)
+
+cat("Names of columns of dataframe are: ", names(df), "\n")
+cat("Number of observations in dataframe are: ", nrow(df), "\n")
+```
+
+##Treating missing values
+We first count the number of NAs in a time series and then will decide how to treat NAs. Since there hardly any NAs(Only $y_t$ contains 3 NAs out of 4279 observations), therefore, we don't care about this problem much in this analysis. We simply drop the three NA observations from the dataframe.
+After deleting the missing values, we are left with 4274 observations. 
+```{r}
+NA_y=sum(is.na(df$Tech_index))
+cat("The number of NAs in series y is: ",  NA_y, "\n") #\n is for new line
+NA_x=sum(is.na(df$Non_Tech_index))
+cat("The number of NAs in series x is: ",  NA_x, "\n")
+
+df=na.omit(df)
+cat("Number of observations in dataframe after omitting NAs are: ", nrow(df), "\n")
+```
+
+
+*Converting the data into time series object*
+```{r}
+dates <- as.Date(df$Date, format = "%Y-%m-%d")
+dfts = xts(df[,2:ncol(df)],order.by=as.Date(dates))  #NASDAQ100 tech index (NDXT)
+x=as.ts(dfts$Non_tech_index)
+y=as.ts(dfts$Tech_index)
+```
+
+#Exploratory data analysis
+In this section, we get to know the insights of our individual time series. We explore their distribution, summary statistics, and properties. 
+
+##Summary
+We want to see the five-point summary, mean, latest and starting values of our both series. The following simple three line code does all this for us.
+```{r}
+summary(dfts)
+head(dfts)
+tail(dfts)
+sd(dfts$Tech_index)
+sd(dfts$Non_tech_index)
+
+```
+
+
+
+
+***Auto-correlation Functions and Partial Auto-Correlation Function (PACF)***
+The autocorrelation function (ACF) is a plot of the correlation between a time series and its lagged values. It is a useful tool for understanding the degree of autocorrelation in a time series, and can be used to identify the order of an autoregressive (AR) or moving average (MA) model.
+The ACF plot here is showing lags on the x-axis and correlation coefficients on the y-axis. The correlation coefficients range from -1 to 1, with 1 indicating a perfect positive correlation and -1 indicating a perfect negative correlation. A value of 0 indicates no correlation.
+
+We are first looking at series $y_t$. In case of our series $y_t$, the ACFs becomes zero, or to technically correct, falls in confidence interval that is not significantly different from zero after taking approximatley 1400 lags into account. However, handling such a high number of lags is neither easy nor parsimonious from modeling point of view. 
+Since the autocorrelation function of both series decays very very slowly, there may be a unit root component that is making the series non-stationary for practical purpose. Therefore, we need to do a unit-root test of both the series before proceeding further.  We are not deciding on the AR order of the series at this moment. 
+```{r}
+par(1,2)
+acf(dfts$Tech_index, lag.max = 1500,plot = TRUE)
+pacf(dfts$Tech_index, lag.max = 10,plot = TRUE)
+```
+*ACFs and PACFs for $x_t$ series*:
+The two functions tells a similar story as of series $y_t$. We need to go for a unit root test for this series as well. 
+```{r}
+acf(dfts$Non_tech_index, lag.max = 1500, plot = TRUE)
+pacf(dfts$Non_tech_index, lag.max = 10, plot = TRUE)
+```
+
+
+***Analyzing the two series together***
+This gives us insights whether two series are related or partially related for a period of time.
+##Comparative Graph
+```{r}
+ggplot(dfts, aes(x = dates)) +
+  geom_line(aes(y = Tech_index, color = "Tech Index")) +
+  geom_line(aes(y = Non_tech_index, color = "Non-tech Index")) +
+  scale_color_manual(name = "Series", values = c("Tech Index" = "blue", "Non-tech Index" = "red")) +
+  labs(title = "Tech and Non-tech NASDAQ Index", x = "Date", y = "Indices value")
+```
+
+
+
+*Cross-correlations between two series* We are trying to see how the two series are related with each other. 
+```{r}
+library(stats)
+x=as.ts(dfts$Non_tech_index)
+y=as.ts(dfts$Tech_index)
+# Calculate the cross-correlation function using ccf()
+ccf(y,x, lag.max = 1000,main="Cross-Correlation Function", xlab="Lag", ylab="Correlation Coefficient" )
+```
+
+***Co-integration test***
+Sometimes two series are non-stationary individually but their linear combination is stationary. This is called co-integration. In order to check this, we use Johansen's cointegration test. The null hypothesis in the Johansen cointegration test, as implemented in the ca.jo() function in R, is that there is no cointegration among the variables in the system. In other words, the null hypothesis is that there are no linear combinations of the variables that are stationary and share a long-run relationship.
+```{r}
+#install.packages("urca")
+library(urca)
+result = ca.jo(dfts, type="trace", K=16)
+summary(result)
+```
+_Interpretation_: We note that test statistics (3.6) is less than critical value at all 1%, 5% and 10% significance level. Therefore we cannot reject the null hypothesis that there is no cointegration. Hence, we conclude that there is no evidence of presence of co-integration between series $y_t$ and series $x_t$. Since there is no co-integration, we need not worry about spurious correlation between our time series. We can go ahead and do usual analysis. 
+
+
+
+
+#Analysis#
+
+
+***Unit Root Test of the series to check stationary***
+We use Augmented Dickey-Fuller (ADF) test to find whether there is a unit root in the time series we are analyzing. The null hypothesis of the ADF test is : 
+$$
+H_0 : \text{Series has a unit root hence is non-stationary}\\
+H_1 : \text{Series is stationary}\\
+$$
+Therefore, if we find \textit{p-value} to be greater than 0.05, then we cannot reject the null hypothesis at 95% level of significance. It will mean that our series has a unit root and hence is not stationary. 
+```{r}
+y=dfts$Tech_index
+adf.test(y)
+
+x=dfts$Non_tech_index
+adf.test(x)
+```
+
+_Interpretation_ : We found that ADF-test cannot reject the null for both of our series. Therefore, both $y_t$ and $x_t$ are non-stationary.
+
+
+
+
+
+***Making series Stationary***
+We generate a first differenced time series in order to do away with unit root in the original series. 
+Because the first-differenced time series $\Delta y_t = y_{t}-y_{t-1}$, there is no $\Delta y_1$ exists because, we don't have $y_0$. Therefore, a missing value will be introduced when we take the first difference. Therefore, we need to delete one observation in order to do further analysis. After doing so, we test whether the first-differenced series is stationary or not. 
+```{r}
+y_fd=diff(y)          #Generating first differenced time series
+y_fd=na.omit(y_fd)    #the first date will contain NA, deleting it
+adf.test(y_fd)        #check whether the first difference series is stationary 
+
+x_fd=diff(x)          
+x_fd=na.omit(x_fd)    
+adf.test(x_fd)         
+```
+_Interpretation_: We note that both of our first-differenced series $\Delta y_t$ and $\Delta x_t$ are stationary at 99% confidence level. In other words, with more than 99% confidence, we can say that the first-differenced series $\Delta y_t$ is stationary. Same line applies for $\Delta x_t$. 
+
+
+
+***ARMA modeling for transformed series***
+```{r}
+#install.packages("forecast")
+library(forecast)
+
+auto.arima(y)
+auto.arima(y_fd)
+
+auto.arima(x)
+auto.arima(x_fd)
+```
+_Interpretation_:We note that series $y_t$ follows a ARIMA(3,1,3) while series $x_t$ follows ARIMA(2,1,4) model. We confirm our earlier findings that both series are non-stationary.
+
+
+***Testing whether $y$ leads $x$***
+We implement the methodology discussed in Harvey (2020) to test whether the Tech index ($y_t$) can be a leading indicator for our Non-tech index ($x_t$). 
+```{r}
+p=10  # Set the number of lagged variables
+
+# Create lagged variables
+y_lagged = matrix(NA, nrow = length(y_fd), ncol = p)
+for (i in 1:p) {
+  y_lagged[,i] = lag(y_fd, p-i)
+}
+y_lagged = y_lagged[(p+1):length(y_fd),] # remove NA rows
+
+# Combine x_t and lagged y_t variables into a data frame
+reg_data = data.frame(x = x_fd[(p+1):length(y_fd)], y_lagged)
+
+# Fit regression model
+model = lm(Non_tech_index ~ ., data = reg_data)
+
+# Print the model summary
+summary(model)
+
+```
+
+Testing the reverse direction.
+```{r}
+p=10  # Set the number of lagged variables
+
+# Create lagged variables
+x_lagged = matrix(NA, nrow = length(x_fd), ncol = p)
+for (i in 1:p) {
+  x_lagged[,i] = lag(x_fd, p-i)
+}
+x_lagged = x_lagged[(p+1):length(x_fd),] # remove NA rows
+
+# Combine x_t and lagged y_t variables into a data frame
+reg_data = data.frame(y = y_fd[(p+1):length(y_fd)], x_lagged)
+
+# Fit regression model
+model = lm(Tech_index ~ ., data = reg_data)
+
+# Print the model summary
+summary(model)
+
+```
+Reverse direction is also true, therefore we cannot interpret this result as casual. 
+
+
+***Granger Causality***
+Granger causality basically means that whether information of one series is useful in predicting the other series. For example, $x_t$ Granger-causes $y_t$ in mean if $E(y_t | x_t, x_{t-1}, x_{t-2},....) \neq E(y_t)$. Alternatively, $x_t$ does NOT Granger-causes $y_t$ in mean if $E(y_t | x_t, x_{t-1}, x_{t-2},....) = E(y_t)$. That is, prediction of $y_t$ does not improve because of $x_t$ or its lag terms. This notion is not exactly say that $x_t$ causes $y_t$, however its better than mere correlation. For our series, we test whether the tech series ($y_t$) Granger-causes the non-tech series ($x_t$). 
+
+The following code tests 
+
+```{r}
+library(vars)
+grangertest(y_fd,x_fd, order = 2) #whether y (with 2 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 5) #whether y (with 5 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 8) #whether y (with 8 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 10) #whether y (with 10 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 20) #whether y (with 20 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 50) #whether y (with 50 lags) Granger-causes x. 
+grangertest(y_fd,x_fd, order = 100) #whether y (with 100 lags) Granger-causes x. 
+```
+
+
+
+
+
+
+***Main Part : Decoupling Analysis***
+
+
+*Decoupling in Levels*
+
+```{r}
+#creating difference of Levels : if there is no decoupling, this series should contain zeros 
+level_diff_fd=y_fd-x_fd
+t.test(level_diff_fd)
+```
+
+**Testing for differences in Levels of two series in two time periods**
+We test for the difference in Levels in two time periods: the point of break is June 2015.  
+```{r}
+split_date = as.Date("2015-03-01")
+level_diff_fd_split = split(level_diff_fd, f = ifelse(time(level_diff_fd) <= split_date, "Before", "After"))
+
+level_diff_fd_before=level_diff_fd_split[["Before"]]
+level_diff_fd_after=level_diff_fd_split[["After"]]
+
+t.test(level_diff_fd_before)
+t.test(level_diff_fd_after)
+
+```
+```{r}
+#splitting the series containing datapoints from 2006 to 2015. 
+split_date1 = as.Date("2010-03-01")
+level_diff_fd_06_to_15_split = split(level_diff_fd_before, f = ifelse(time(level_diff_fd) <= split_date1, "06_to_10", "10_to_15"))
+
+#storing splitted series in a vector
+level_diff_fd_06_to_10=level_diff_fd_06_to_15_split[["06_to_10"]] 
+level_diff_fd_10_to_15=level_diff_fd_06_to_15_split[["10_to_15"]]
+
+cat("\n", "The result of t-test of equality of Levels of tech v/s non-tech series in 2006 to 2010")
+t.test(level_diff_fd_06_to_10)
+cat("\n", "The result of t-test of equality of Levels of tech v/s non-tech series in 2010 to 2015")
+t.test(level_diff_fd_10_to_15)
+
+
+#splitting the series containing datapoints from 2015 to 2023. 
+split_date2 <- as.Date("2020-01-20")
+level_diff_fd_15_to_23_split <- split(level_diff_fd_after, f = ifelse(time(level_diff_fd_after) <= split_date2, "15_to_20", "20_to_23"))
+level_diff_fd_15_to_20 <- level_diff_fd_15_to_23_split[["15_to_20"]]
+level_diff_fd_20_to_23 <- level_diff_fd_15_to_23_split[["20_to_23"]]
+
+cat("\n", "The result of t-test of equality of means of Levels of tech v/s
+                             non-tech series in 2015 to 2020: pre-covid period")
+t.test(level_diff_fd_15_to_20)
+
+
+#post covid : after 3rd major wave which ends in March 2022.
+split_date3 <- as.Date("2022-03-30")
+level_diff_fd_20_to_23_split <- split(level_diff_fd_20_to_23, f = ifelse(time(level_diff_fd_20_to_23) <= split_date3, "covid", "post_covid"))
+level_diff_fd_covid <- level_diff_fd_20_to_23_split[["covid"]]
+level_diff_fd_post_covid <- level_diff_fd_20_to_23_split[["post_covid"]]
+
+t.test(level_diff_fd_covid)
+
+cat("\n", "The result of t-test of equality of means of Levels of tech v/s '
+                           non-tech series in 2022 to 2023 : post-covid period")
+t.test(level_diff_fd_post_covid)
+
+```
+
+
+
+*Volatility construction*
+```{r}
+#Volatility of series y using 100 days rolling window 
+vol_y = rollapply(y, width = 100, FUN = sd, fill = NA, align = "right")
+vol_x = rollapply(x, width = 100, FUN = sd, fill = NA, align = "right")
+
+vol = data.frame(date = index(vol_y), vol_y, vol_x)
+
+# Volatility Comparison of two series 
+ggplot(vol, aes(x = date)) +
+  geom_line(aes(y = vol_y, color = "Volatility of y"), linewidth = 1) +
+  geom_line(aes(y = vol_x, color = "Volatility of x"), linewidth = 1) +
+  scale_color_manual(values = c("Volatility of y" = "red", "Volatility of x" = "blue")) +
+  labs(title = "Volatility Comparison", x = "Date", y = "Volatility")
+```
+
+***ARIMA modelling for the volatility of two series***
+```{r}
+cat("The following output shows appropriate ARIMA model for volatility of series y", "\n")
+auto.arima(vol_y)
+
+cat("\n",  "The following output shows appropriate ARIMA model for volatility of series x", "\n")
+auto.arima(vol_x)
+```
+
+***Making volatility series stationary***
+We observed that there is one unit root in both the volatility series. Following codes takes first difference of the volatility series to make it stationary. After first differencing, we test whether there is a unit root in transformed series. We conclude that the transformed series is stationary as ADF test gives more evidence in favor of alternative hypothesis. 
+```{r}
+vol_y_fd=diff(vol_y)          #Generating first differenced time series
+vol_y_fd=na.omit(vol_y_fd)    #the first date will contain NA, deleting it
+adf.test(vol_y_fd)            #check whether the first difference series is stationary 
+auto.arima(vol_y_fd)
+
+vol_x_fd=diff(vol_x)        
+vol_x_fd=na.omit(vol_x_fd)  
+adf.test(vol_x_fd)         
+auto.arima(vol_x_fd)
+```
+
+
+
+***Testing for equality of means in volatility series simple t-test***
+We use the stationary first-differenced volatility 
+```{r}
+#creating difference of volatility : if there is no decoupling, this series should contain zeros 
+vol_diff_fd=vol_y_fd-vol_x_fd
+t.test(vol_diff_fd)
+```
+
+**Testing for differences in volatility of two series in two time periods**
+We test for the difference in volatility in two time periods: the point of break is June 2015.  
+```{r}
+split_date = as.Date("2015-03-01")
+vol_diff_fd_split = split(vol_diff_fd, f = ifelse(time(vol_diff_fd) <= split_date, "Before", "After"))
+
+vol_diff_fd_before=vol_diff_fd_split[["Before"]]
+vol_diff_fd_after=vol_diff_fd_split[["After"]]
+
+t.test(vol_diff_fd_before)
+t.test(vol_diff_fd_after)
+
+```
+```{r}
+#splitting the series containing datapoints from 2006 to 2015. 
+split_date1 = as.Date("2010-03-01")
+vol_diff_fd_06_to_15_split = split(vol_diff_fd_before, f = ifelse(time(vol_diff_fd) <= split_date1, "06_to_10", "10_to_15"))
+
+#storing splitted series in a vector
+vol_diff_fd_06_to_10=vol_diff_fd_06_to_15_split[["06_to_10"]] 
+vol_diff_fd_10_to_15=vol_diff_fd_06_to_15_split[["10_to_15"]]
+
+cat("\n", "The result of t-test of equality of means of volatility of tech v/s non-tech series in 2006 to 2010")
+t.test(vol_diff_fd_06_to_10)
+cat("\n", "The result of t-test of equality of means of volatility of tech v/s non-tech series in 2010 to 2015")
+t.test(vol_diff_fd_10_to_15)
+
+
+#splitting the series containing datapoints from 2015 to 2023. 
+split_date2 <- as.Date("2020-01-20")
+vol_diff_fd_15_to_23_split <- split(vol_diff_fd_after, f = ifelse(time(vol_diff_fd_after) <= split_date2, "15_to_20", "20_to_23"))
+vol_diff_fd_15_to_20 <- vol_diff_fd_15_to_23_split[["15_to_20"]]
+vol_diff_fd_20_to_23 <- vol_diff_fd_15_to_23_split[["20_to_23"]]
+
+cat("\n", "The result of t-test of equality of means of volatility of tech v/s
+                             non-tech series in 2015 to 2020: pre-covid period")
+t.test(vol_diff_fd_15_to_20)
+
+
+#post covid : after 3rd major wave which ends in March 2022.
+split_date3 <- as.Date("2022-03-30")
+vol_diff_fd_20_to_23_split <- split(vol_diff_fd_20_to_23, f = ifelse(time(vol_diff_fd_20_to_23) <= split_date3, "covid", "post_covid"))
+vol_diff_fd_covid <- vol_diff_fd_20_to_23_split[["covid"]]
+vol_diff_fd_post_covid <- vol_diff_fd_20_to_23_split[["post_covid"]]
+
+t.test(vol_diff_fd_covid)
+
+cat("\n", "The result of t-test of equality of means of volatility of tech v/s '
+                           non-tech series in 2022 to 2023 : post-covid period")
+t.test(vol_diff_fd_post_covid)
+
+```
+
+
+
+
+
+
+***Correlation in Volatility of two series***
+
+```{r}
+#Finding a time series of correlation using rolling windows of 100 days
+ts1=vol_y
+ts2=vol_x
+window_size = 360
+rolling_cor = rollapply(cbind(ts1, ts2), width = window_size, FUN = function(x) cor(x[,1], x[,2]), by.column = FALSE, align = "right")
+
+# Plot the rolling correlation time series with dates
+plot(rolling_cor, main = "Rolling Window Correlation", ylab = "Correlation")
+
+```
+
+***Testing for structural break in volatility series***
+In the following code, we check whether there is(are) a break-point(s) between volatility of series x and y. 
+```{r}
+library(strucchange)
+library(car)
+model=lm(y~x, data=vol)
+breakpoint = breakpoints(vol_y ~ vol_x, data=vol) #this step takes time : >5 mins
+#sctest(vol_y ~ vol_x, type = "Chow", point = breakpoint$breakpoints[1]) can check it using chow test
+
+#reporting break-points in dates by converting observation numbers to dates
+start_date = as.Date("2006-08-10")
+dates = start_date + breakpoint$breakpoints - 1
+cat("Breakpoints occured at: ", "\n") # Print the dates
+print(dates)
+```
+
+

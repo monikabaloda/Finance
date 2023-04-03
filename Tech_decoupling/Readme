@@ -1,0 +1,10 @@
+This project investigate the co-movement of technology and non-technology sectors for the last seventeen years.
+Calling the close co-movement ‘coupling’, I show that after the year 2015, the technology and non-technology sectors decouples in terms of their levels and volatility. 
+In this folder, we upload three main files: 
+  1. R-markdown containing codes and its description.
+  2. Paper draft which is the main research document, it contains pretty much everything: main research findings, exploratory data analysis and methodology. 
+  3. I also provide the data which is used for this project. This data is also publically available on yahoo finance website. 
+
+This work relates to many research fields, the main field it belongs to is empirical quantiative finance. It also relates to technology vs non-technology sector movements. 
+Time series econometrics, economic growth, finance volatility also finds their mention in this work. 
+  

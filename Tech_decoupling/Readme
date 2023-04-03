@@ -1,0 +1,12 @@
+Financial market volatility is an important input for investment, option pricing, and financial market
+regulation and there is no ambiguity in saying that technology is the engine of growth. In this project,
+I investigate the co-movement of technology and non-technology sectors for the last seventeen years.
+Calling the close co-movement ‘coupling’, I show that after the year 2015, the technology and non-
+technology sectors decouples in terms of their levels and volatility. I argue that covid-19 shock is
+not the reason behind this decoupling phenomenon. In addition to this, I show that the technology
+sector is a leading indicator of growth for the rest of the economy. I use ARIMA modeling and
+stationarity tests to process our time series for analysis and testing. We find that the technology
+sector index follows ARIMA(3,1,3), while the non-technology sector follows ARIMA(2,1,4) model. I
+discuss the steps of data wrangling, pre-processing, missing value treatment, and exploratory data
+analysis (EDA). I discuss the merits and shortcomings of my work wherever required to correctly
+interpret my results

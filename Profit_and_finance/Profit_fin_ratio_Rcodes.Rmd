@@ -1,0 +1,287 @@
+---
+title: "Factors That Matter for Profitability"
+author: "Monika Baloda"
+date: "2023-03-04"
+output: html_document
+---
+
+*Loading the dataset*
+```{r}
+data=read.csv("C:/Users/EndUser/Desktop/UCR/winter2023/Stat232/project/data/fin_ratio.csv")
+```
+
+***Data Cleaning***
+
+***Deleting the unnecessary identifier variables***
+We just need two identifies: gvkey i.e. company key and qdate i.e. time. All other keys are not required, so we can delete them. 
+```{r}
+data=subset(data, select=-c(cusip, TICKER, permno,adate,public_date))
+```
+
+
+
+_Missing Value Treatment_: We find the missing values (NAs) by column to see which variable is better to drop. 
+We see that there are disproportionately high number of missing values in certain columns. Therefore, it may be a wise thing to drop a variable having lot of missing values rather than including it, because it may decrease our overall complete cases. We choose a threshold equal to 7.5% i.e. we drop a variable if its missing values are more than 7.5% of total. This choice of threshold could be 5% or 10%, but we choose it in a way such that maximum number of variables can be retained and minimum missing values remain in the data. We found 7.5% to be an appropriate value for this goal. 
+
+One can do treatment of missing value by company ID (gvkey) as well, but for the simplicity, we leave this exercise. From this point, we just drop the missing values because they are little portion of total and are likely to not affect the analysis. 
+
+
+Finally, we get complete observation by deleting all NAs in the dataframe. We create a new dataframe with the name _df_, and use this dataframe for all our remaining analysis. 
+
+```{r}
+cat("The number of columns in data-frame is: ", ncol(data),
+     "and  The number of rows in data-frame is: ", nrow(data), "\n")
+na_counts <- colSums(is.na(data))
+print(na_counts)
+
+#Setting a threshold (=7.5%) to delete variables above missing value above this threshold
+threshold = nrow(data)*0.075
+
+# filter the dataframe for columns with NAs less than the threshold
+df = subset(data, select = -c(which(colSums(is.na(data)) > threshold)))
+cat("The number of deleted columns in new data-frame is: ", ncol(data)-ncol(df),"\n")
+
+na_counts_new <- colSums(is.na(df))
+#The percentage misisng values are in retained columns are:
+print(round(100*(na_counts_new)/nrow(df),2)) 
+
+
+#making a new dataframe df by deleting the missing values
+df=na.omit(df)  #Deleting the missing value rows
+
+
+#to check if we have done it correctly, this should give a 0 output.
+cat("The number of NAs in new dataframe are: ", sum(is.na(df)), "\n")
+
+cat("The number of columns in new data-frame is: ", ncol(df),
+     "and  The number of rows in new data-frame is: ", nrow(df), "\n")
+obs_deleted=round(100*(nrow(data)-nrow(df))/nrow(data),2)
+cat("Total percentage of deleted observations from missing value treatment are:"
+      ,obs_deleted, "\n")
+```
+
+
+
+***Data Pre-Processing ***
+In this section we save data into two different parts: one is $y$, our target variable and other is $X$ which is the remaining variables. 
+We also make a new dataframe _df_num_ which contains numerical variables, it is a subset of df.
+```{r}
+library(dplyr) 
+df_num = df %>% select_if(is.numeric)
+index = which(names(df_num) == "GProf")
+
+#splitting data into target and predictors
+y=df_num[,index]  #target variable
+X=df_num[,-index]  #predictors
+```
+
+
+
+***EDA: Exploratory Data Analysis***
+In this section, we basically visualize the data to know it better. This section will help us in refining our research question and in deciding the appropriate methodology to choose from. 
+
+1) Finding the number of firms in our data thorough unique gvkey codes
+```{r}
+cat("The number of unique firms in our data are: ", length(unique(df$gvkey)), "\n")
+```
+
+
+**Histograms/BoxPlot of Target variable**
+```{r}
+
+# Dropping outliers
+y_new=subset(y, y>mean(y) -3*sd(y) & y < mean(y) + 3*sd(y) ) 
+
+par(mfrow = c(2, 2))
+#box-plot of our target variable 
+boxplot(y,  main = "Boxplot of Target Variable") 
+hist(y, main = "Hist of Target Variable") 
+#box-lpot after removing outliers
+boxplot(y_new,  main = "Boxplot of Target (without outliers)") 
+hist(y_new, main = "Hist of Target (without outliers)") 
+
+cat("The 5 point summary and mean of original target variable is: ", "\n")
+print(summary(y))
+cat("\n", "The 5 point summary and mean of target variable without outliers is: ", "\n")
+print(summary(y_new))
+```
+
+**Summary-statistics of key predictor variables**
+
+```{r}
+pcf=X$pcf
+roe=X$roe
+at_turn=X$at_turn
+debt_assets=X$debt_assets
+
+# Dropping outliers
+pcf_new=subset(pcf, pcf>mean(pcf) -3*sd(pcf) & pcf < mean(pcf) + 3*sd(pcf) ) 
+roe_new=subset(roe, roe>mean(roe) -3*sd(roe) & roe < mean(roe) + 3*sd(roe) ) 
+at_turn_new=subset(at_turn, at_turn>mean(at_turn) -3*sd(at_turn) & at_turn < mean(at_turn) + 3*sd(at_turn) ) 
+debt_assets_new=subset(debt_assets, debt_assets>mean(debt_assets) -3*sd(debt_assets) & debt_assets < mean(debt_assets) + 3*sd(debt_assets) ) 
+
+#Histogram of predictors(without outliers)
+
+par(mfrow = c(2, 2))
+hist(pcf_new, main = "Liquidity : Price/Cash-flow (pcf)") 
+hist(roe_new, main = "Return on Equity (roe)") 
+hist(at_turn_new, main = "Asset Turnover (at_turn)") 
+hist(debt_assets_new, main = "Total-Debt/Total-Assets (debt_asset)") 
+
+
+```
+
+#Summary statistics
+```{r}
+pcf=X$pcf
+roe=X$roe
+at_turn=X$at_turn
+debt_assets=X$debt_assets
+
+summary(pcf)
+summary(roe)
+summary(at_turn)
+summary(debt_assets)
+
+```
+
+
+**Correlation Analysis**
+```{r}
+library(ggplot2)
+# create a sample dataset with five variables
+df=na.omit(data)
+subset_df=df[1:nrow(df), c("GProf","efftax", "roe", "pcf", "sale_invcap", "at_turn") ]
+
+# compute the correlation matrix
+cor_matrix = cor(subset_df)
+
+#install.packages("ggcorrplot")
+library(ggcorrplot)
+ggcorrplot(cor_matrix, type = "lower", hc.order = F, lab = TRUE, lab_size = 3, 
+           colors = c("#6D9EC1", "white", "#E46726"), 
+           ggtheme = theme_gray, title = "Correlation Matrix")
+
+
+#Correlation matrix for full data
+library(dplyr)
+df_numeric <- df %>% select_if(is.numeric)
+
+cor_matrix_full = cor(df_numeric)
+ggcorrplot(cor_matrix_full, type = "lower", hc.order = F, lab = TRUE, lab_size = 1, 
+           colors = c("#6D9EC1", "white", "#E46726"), 
+           ggtheme = theme_gray, title = "Correlation Matrix of all variables")
+
+
+```
+
+
+
+***Analysis***
+
+
+**Finding fives best variables using forward selection method**
+```{r}
+library(dplyr)
+library(leaps)
+
+regfit = regsubsets(GProf ~ ., data = df_num, method="forward", nvmax = 5, really.big = T)
+
+# Summarize the results
+summary(regfit)
+
+```
+
+
+**Implementing LASSO**
+```{r}
+library(glmnet)
+
+
+
+set.seed(123)
+train <- sample(nrow(df_num), nrow(df_num)/3)
+test <- setdiff(1:nrow(df_num), train)
+
+# Standardize the predictors
+x_train <- scale(as.matrix(df_num[train,-index])) 
+x_test <- scale(as.matrix(df_num[test,-index]))
+
+# Create the response vectors
+y_train <- df_num[train,index]
+y_test <- df_num[test,index]
+
+# Fit the LASSO model
+lasso.fit <- glmnet(x_train, y_train, alpha = 1, lambda = 0.01)
+
+# Plot the LASSO coefficients
+#plot(lasso.fit, xvar="lambda", label=TRUE)
+
+# Choose the value of lambda that minimizes cross-validated error
+cv.fit <- cv.glmnet(x_train, y_train, alpha = 1)
+lambda.min <- cv.fit$lambda.min
+
+# Fit the final model using the chosen lambda value
+lasso.final <- glmnet(x_train, y_train, alpha = 1, lambda = lambda.min)
+coef(lasso.final)
+
+# Count the number of non-zero coefficients
+n_nonzero <- sum(coef(lasso.final) != 0)
+n_zero <- sum(coef(lasso.final) == 0)
+
+
+cat("Number of non-zero variables:", n_nonzero, "\n")
+
+
+#
+important_vars = which(coef(lasso.final) != 0)
+important_vars =important_vars-1  #removing intercept's index
+
+# Subset X to include only important variables
+X_imp = X[ ,important_vars]
+X_imp=X_imp[,3:ncol(X_imp)]  #the first two columns are IDs so we are removing them
+
+
+#cat("The number of important variables are:", imp_var_number, "\n")
+#cat("The number of not-important variables are:", zero_var_number, "\n")
+
+```
+
+
+
+***Random Forest*** We aim to rank the variable's importance using this method. 
+```{r}
+library(randomForest)
+# Set seed for reproducibility
+set.seed(123)
+
+# Randomly sampling the big data into smaller one for computational ease
+row_index =sample(nrow(X_imp), size = 20000) #keeping 10% of total data
+
+# Create new data subsets
+X_prime = X_imp[row_index, ]
+y_prime = y[row_index]
+
+# Train random forest model
+model =randomForest(x = X_prime, y = y_prime, ntree = 100, importance = TRUE, seed = 50)
+
+
+
+# Get feature importances
+importances <- round(importance(model, type = 1),2)
+
+# Create a data frame with feature names and their importance scores
+feature_names <- colnames(X_imp)
+feature_importances <- data.frame(feature_names, importances)
+
+# Sort the feature importances by importance score in descending order
+feature_importances = feature_importances[order(-importances),]
+
+# Print the feature importances in descending order
+cat("Feature importances:\n")
+for (i in 1:nrow(feature_importances)) {
+  cat(paste(feature_importances[i, 1], ": ", feature_importances[i, 2], "\n", sep = ""))
+}
+
+```
+

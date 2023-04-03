@@ -1,0 +1,20 @@
+-In this project, I investigate the financial ratios which can explain the profitability of a firm. 
+-I found that it is the asset turnover is the most important variable, then comes return on asset, sale to invested capital ratio, 
+      debt to asset ratio and liquidity indicators in the decreasing order of importance. 
+-I analyze big-data on united states firm contianing obervations more than 2.3 million. 
+-I used R programming and built-in libraries for this project. 
+
+-The data used in this project is firm level financial ratios and indicators provided by Wharton Research Data Services (WRDS) 
+It is a data research platform and business intelligence tool provided by the Wharton School of the University of Pennsylvania.
+
+-My dataset contains data on more than 18000 firms of small and big sized firms. The time dimension covered by this dataset is from 1983 to 2023 
+which is approximatly 40 years. The data is reported quartely. There are around 75 number of variables in total and around 23,000,000 observations.
+Therefore, my resuls enjoy an impressive external as well as internal validity.
+
+I upload the following files: 
+  1. Main report : this is the final document containing the hypothsis formation to results and then inferences. I disuss methodology in detail in this document. 
+  2. Code : I submit a R-markdown file which contains the code blocks and their description along with. 
+  3. Data : due to the limited size github allow, I cannot upload the data here. However, I can provide it to you if needed. 
+  
+  
+Please write your valuable feedbacks to me at mbalo005@ucr.edu

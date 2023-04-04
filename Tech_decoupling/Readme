@@ -1,4 +1,5 @@
 This project investigate the co-movement of technology and non-technology sectors for the last seventeen years in the United States.
+-Pre-print of this article is available on arXiv at : https://arxiv.org/abs/2304.00510 
 Calling the close co-movement ‘coupling’, I show that after the year 2015, the technology and non-technology sectors decouples in terms of their levels and volatility. 
 In this folder, we upload three main files: 
   1. 'tech_decouple_public_markdown.Rmd' : R-markdown containing codes and its description.
